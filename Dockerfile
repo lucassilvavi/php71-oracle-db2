@@ -1,4 +1,4 @@
-FROM php:7.1-fpm
+FROM php:7.1-apache
 
 #Install libs
 RUN apt-get update && apt-get install -y \
@@ -31,32 +31,29 @@ ENV ORACLE_HOME=/usr/lib/oracle/12.2/client64 \
 RUN cd /opt/ibm/db2/ \
     && ln -s $IBM_DB_HOME/include /include \
     && tar -xzf drive-ibm.tar.gz \
-    && /bin/bash $IBM_DB_HOME/installDSDriver
-
-RUN cd /tmp  \
+    && /bin/bash $IBM_DB_HOME/installDSDriver \
+    && cd /tmp  \
     && alien -i oracle-oci12.rpm oracle-oci12-devel.rpm \
     && pecl install xdebug-2.6.0 \
-    && printf $IBM_DB_HOME | pecl install ibm_db2
+    && printf $IBM_DB_HOME | pecl install ibm_db2 \
 
 #Configure PDO DB2
-RUN cd /tmp/PDO_IBM-1.3.4-patched \
+    && cd /tmp/PDO_IBM-1.3.4-patched \
     && phpize \
     && ./configure --with-pdo-ibm=$IBM_DB_HOME/lib \
     && make -j "$(nproc)" \
-    && make install
+    && make install \
 
 #Configure Oci8 and PGSql
-RUN docker-php-ext-configure oci8 --with-oci8=instantclient,/usr/lib/oracle/12.2/client64/lib \
+    && docker-php-ext-configure oci8 --with-oci8=instantclient,/usr/lib/oracle/12.2/client64/lib \
     && docker-php-ext-configure pdo_oci --with-pdo-oci=instantclient,/usr,12.2 \
-    && docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql
+    && docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
 
 #Configure LDAP
-RUN docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu \
+    && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu \
     && docker-php-ext-install -j$(nproc) oci8 pgsql pdo pdo_oci pdo_pgsql soap mysqli pdo_mysql ldap \
-    && docker-php-ext-enable  ibm_db2 pdo_ibm xdebug soap
-
-#Install lib GD
-RUN docker-php-ext-install gd
+    && docker-php-ext-enable  ibm_db2 pdo_ibm xdebug soap \
+    && docker-php-ext-install gd \
 
 #Rename php.ini
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
