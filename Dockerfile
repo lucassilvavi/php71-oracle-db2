@@ -53,7 +53,7 @@ RUN cd /opt/ibm/db2/ \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu \
     && docker-php-ext-install -j$(nproc) oci8 pgsql pdo pdo_oci pdo_pgsql soap mysqli pdo_mysql ldap \
     && docker-php-ext-enable  ibm_db2 pdo_ibm xdebug soap \
-    && docker-php-ext-install gd \
+    && docker-php-ext-install gd
 
 #Rename php.ini
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
@@ -77,5 +77,9 @@ RUN set -e; \
   docker-php-ext-enable ssh2; \
   apt-get remove --purge -y $BUILD_PACKAGES && rm -rf /var/lib/apt/lists/*; \
   apt-get clean;
+
+RUN a2enmod rewrite \
+   && service apache2 restart
+
 
 
